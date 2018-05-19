@@ -67,12 +67,13 @@ uses
 {.$ENDIF}
 
 begin
-  {$IFDEF WINDOWS}
+  {.$IFDEF WINDOWS}
   {$IFDEF USE_APPLICATION}
     Application.Initialize; //note: only needed for OLE automation?
     Application.Title := 'ThinkSQL';
-  Application.Run; //start Window message processing loop
+    Application.Run; //start Window message processing loop
+  {$ELSE}
+    uMain.main;
   {$ENDIF}
-  {$ENDIF}
-  uMain.main;
+  {.$ENDIF}
 end.

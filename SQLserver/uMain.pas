@@ -13,7 +13,7 @@
 {$I Defs.inc}
 {$DEFINE Service_App}
 interface
-uses classes;
+uses classes, uEvsThsOptions;
 type
   //This signature is used to allow the server to run other loops with out
   //any knowledge of what role those loops serve. A single variable is passed to
@@ -92,17 +92,20 @@ procedure Main;
 const routine=':Main';
 var
   {$IFDEF WIN32}
+  {$IFDEF DEBUGLOG}
   minws,maxws:dword;
+  {$ENDIF}
   ph:thandle;
   {$ENDIF}
-  dbfname:string;
-  serviceName:string;
+  //dbfname:string;
+  //serviceName:string;
 
   i:integer;
   s,sc:string;
 
   startDB:TDB;
   vContinue:Boolean;
+
   procedure ParseParams;
   var
     i:Integer;
@@ -133,19 +136,25 @@ var
         *)
 
         if sc='SERVICE' then begin
-          if trim(s)<>'' then serviceName:=s;
+          if trim(s)<>'' then options.serviceName:=s;
           {$IFDEF DEBUG_LOG}
           log.add(who,where,format('  Service overridden with parameter %s',[s]),vDebugHigh);
           {$ENDIF}
         end;
       end else begin //catalog name
-        dbfname:=s;
+        options.defaultdbname:=s;
         {$IFDEF DEBUG_LOG}
         log.add(who,where,format('  Catalog overridden with parameter %s',[s]),vDebugHigh);
         {$ENDIF DEBUG_LOG}
       end;
     end;
   end;
+
+  function CatalogName:String;
+  begin
+    Result := IncludeTrailingPathDelimiter(Options.DataDirectory)+Options.DefaultDBName;
+  end;
+
 begin
   {$IFDEF DEBUG_LOG}
   log.start;
@@ -155,8 +164,8 @@ begin
     log.add(who,where,'Started',vDebug);
     {$ENDIF DEBUG_LOG}
 
-    dbfname:='db1'; //default
-    serviceName:=TCPservice; //default
+    //dbfname:=uEvsThsOptions.Options.DefaultDBName;
+    //serviceName:=TCPservice; //default
 
     {$IFNDEF Service_App}
     ParseParams;
@@ -179,7 +188,7 @@ begin
     try
       dbs.name:=serverName; //todo take name from startup?
 
-      startDB:=dbs.addDB(dbfname);
+      startDB:=dbs.addDB(CatalogName);
       {$IFDEF DEBUG_LOG}
       if startDB=nil then log.add(who,where,'Failed to re-add db',vdebug);
       {$ENDIF DEBUG_LOG}
@@ -199,7 +208,7 @@ begin
 
         //todo assert = getInitialConnectdb, i.e. primary catalog
         {Open the database}
-        if startDB.openDB(dbfname,False)=ok then begin
+        if startDB.openDB(options.DefaultDBName,False)=ok then begin
           {$IFDEF DEBUG_LOG}
           log.add(who,where,'Opened database',vDebug);
           log.add(who,where,'',vDebug);
@@ -223,7 +232,7 @@ begin
           log.add(who,where,'Connection manager created',vdebug);
           {$ENDIF DEBUG_LOG}
 
-          if cm.Start(serviceName)<>ok then
+          if cm.Start(Options.ServiceName)<>ok then
             exit; //abort
 
           {$IFDEF DEBUG_LOG}
