@@ -22,6 +22,9 @@
         <CompilerOptions>
           <Version Value="11"/>
           <PathDelim Value="\"/>
+          <Target>
+            <Filename Value=".\bin\$(TargetCPU)-$(TargetOS)\ThinkSQL"/>
+          </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);..;..\odbc"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>

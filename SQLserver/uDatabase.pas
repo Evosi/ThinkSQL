@@ -3608,18 +3608,14 @@ begin
         end; {with}
 
         {sysColumn}
-        with (catalogRelation[sysColumn] as TRelation) do
-        begin
-          if Open(tr.sysStmt,nil,sysCatalogDefinitionSchemaName,sysColumn_table,isView,viewDefinition)<>ok then
-          begin
+        with (catalogRelation[sysColumn] as TRelation) do begin
+          if Open(tr.sysStmt,nil,sysCatalogDefinitionSchemaName,sysColumn_table,isView,viewDefinition)<>ok then begin
             {$IFDEF DEBUG_LOG}
             log.add(tr.sysStmt.who,where+routine,'Failed reading '+sysColumn_table,vdebugError);
             {$ENDIF}
             result:=Fail;
             exit; //abort;
-          end
-          else
-          begin
+          end else begin
             //todo assert not isView
             {$IFDEF DEBUG_LOG}
             log.add(tr.sysStmt.who,where+routine,'Opened '+sysColumn_table,vdebug);
