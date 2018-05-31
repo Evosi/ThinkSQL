@@ -10,7 +10,7 @@ interface
    are thinksql specific and not generic
   }
 uses
-  Classes, SysUtils, IdGlobal, uGlobal;
+  Classes, SysUtils, IdGlobal, uGlobal, uEvsInterfaces;
 
 type
   IEvsOptionPersister = interface;
@@ -86,25 +86,6 @@ function Options:IEvsThsRuntimeOptions;
 implementation
 uses syncobjs, IniFiles, {uEvsEncoding} IdCoderUUE; //do not polute the code with more external requirements.
 type
-
-  { TEvsInterfacedObject }
-  {This is a simple IUnknown that can thake the role of either an aggregate or a stand alone interface}
-  //move it to a "base" unit so everyone can use it.
-  TEvsInterfacedObject = class(TObject,IUnknown)
-  protected
-    FRefCount : Longint;
-    FOwner    : Pointer;
-    { implement methods of IUnknown }
-    function QueryInterface(constref Iid : TGuid;out Obj) : Longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
-    function _AddRef : Longint;                                     {$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
-    function _Release : Longint;                                    {$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
-  public
-    constructor Create(const aOwner: IUnknown=nil);virtual;
-    procedure AfterConstruction;override;
-    procedure BeforeDestruction;override;
-    class function NewInstance : TObject;override;
-    property RefCount : Longint read FRefCount;
-  end;
 
   { TEvsIniPersister }
   //for now this is the default settings file. move it to the next
@@ -425,56 +406,6 @@ end;
 procedure TEvsIniPersister.Save(const aSubject :IEvsPersistable); {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
 begin
   aSubject.SaveTo(Self);
-end;
-
-{$ENDREGION}
-
-{$REGION 'TEvsInterfacedObject' }
-function TEvsInterfacedObject.QueryInterface( constref Iid : TGuid;out Obj) : Longint;{$IFNDEF WINDOWS}cdecl{$ELSE}stdcall{$ENDIF};
-begin
-if GetInterface(iid,obj) then result:=S_OK
-else result:=longint(E_NOINTERFACE);
-end;
-
-function TEvsInterfacedObject._AddRef :Longint; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
-begin
-  if Assigned(FOwner) then Result := IUnknown(FOwner)._AddRef
-  else Result := InterLockedIncrement(FRefCount);
-end;
-
-function TEvsInterfacedObject._Release :Longint; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
-begin
-  if Assigned(FOwner) then
-    Result := IUnknown(FOwner)._Release
-  else begin
-    Result := InterLockedDecrement(FRefCount);
-    if Result = 0 then Destroy;
-  end;
-end;
-
-constructor TEvsInterfacedObject.Create(const aOwner :IUnknown=nil);
-begin
-  inherited Create;
-  FOwner := Pointer(aOwner);
-end;
-
-procedure TEvsInterfacedObject.AfterConstruction;
-begin
-   {we need to fix the refcount we forced in newinstance}
-   {further, it must be done in a thread safe way       }
-   InterLockedDecrement(FRefCount);
-end;
-
-procedure TEvsInterfacedObject.BeforeDestruction;
-begin
-  if not Assigned(FOwner) then if (FRefCount<>0) then
-      raise Exception.Create('Unable to destroy '+ClassName+'. There are more references on this object.');
-end;
-
-class function TEvsInterfacedObject.NewInstance : TObject;
-begin
-  Result := inherited NewInstance;
-  if Result<>nil then TEvsInterfacedObject(Result).FRefCount:=1;
 end;
 
 {$ENDREGION}

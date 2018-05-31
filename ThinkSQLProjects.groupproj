@@ -9,6 +9,7 @@
     <Projects Include="SQLserver\ThinkSQL.dproj" />
     <Projects Include="SQLtools\TestSuite\TestSuite.dproj" />
     <Projects Include="ThinkSQLService\ThinkSQLService.dproj" />
+    <Projects Include="ThinkTestSuite\ThinkSQLTests.dproj" />
   </ItemGroup>
   <ProjectExtensions>
     <Borland.Personality>Default.Personality</Borland.Personality>
@@ -61,14 +62,23 @@
   <Target Name="TestSuite:Make">
     <MSBuild Projects="SQLtools\TestSuite\TestSuite.dproj" Targets="Make" />
   </Target>
+  <Target Name="ThinkSQLTests">
+    <MSBuild Projects="ThinkTestSuite\ThinkSQLTests.dproj" Targets="" />
+  </Target>
+  <Target Name="ThinkSQLTests:Clean">
+    <MSBuild Projects="ThinkTestSuite\ThinkSQLTests.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="ThinkSQLTests:Make">
+    <MSBuild Projects="ThinkTestSuite\ThinkSQLTests.dproj" Targets="Make" />
+  </Target>
   <Target Name="Build">
-    <CallTarget Targets="ThinkSQL;ThinkSQLService;DCPdelphi2007;sqlthink;TestSuite" />
+    <CallTarget Targets="ThinkSQL;ThinkSQLService;DCPdelphi2007;sqlthink;TestSuite;ThinkSQLTests" />
   </Target>
   <Target Name="Clean">
-    <CallTarget Targets="ThinkSQL:Clean;ThinkSQLService:Clean;DCPdelphi2007:Clean;sqlthink:Clean;TestSuite:Clean" />
+    <CallTarget Targets="ThinkSQL:Clean;ThinkSQLService:Clean;DCPdelphi2007:Clean;sqlthink:Clean;TestSuite:Clean;ThinkSQLTests:Clean" />
   </Target>
   <Target Name="Make">
-    <CallTarget Targets="ThinkSQL:Make;ThinkSQLService:Make;DCPdelphi2007:Make;sqlthink:Make;TestSuite:Make" />
+    <CallTarget Targets="ThinkSQL:Make;ThinkSQLService:Make;DCPdelphi2007:Make;sqlthink:Make;TestSuite:Make;ThinkSQLTests:Make" />
   </Target>
   <Import Condition="Exists('$(MSBuildBinPath)\Borland.Group.Targets')" Project="$(MSBuildBinPath)\Borland.Group.Targets" />
 </Project>

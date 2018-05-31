@@ -27,6 +27,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);..;..\odbc"/>
+            <OtherUnitFiles Value="..\Debug;..\Evosi"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -174,7 +175,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="53">
+    <Units Count="55">
       <Unit0>
         <Filename Value="ThinkSQL.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -384,9 +385,17 @@
         <IsPartOfProject Value="True"/>
       </Unit51>
       <Unit52>
-        <Filename Value="uEvsEncoding.pas"/>
+        <Filename Value="..\Debug\uEvsDbgSynchObjs.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit52>
+      <Unit53>
+        <Filename Value="..\Evosi\uEvsSyncObjs.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit53>
+      <Unit54>
+        <Filename Value="uEvsInterfaces.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit54>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

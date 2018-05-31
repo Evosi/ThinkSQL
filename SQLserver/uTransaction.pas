@@ -54,6 +54,8 @@
                the thread can register an event to get inform when the transaction fails or succeds
                with its task.
                The same goes for the task managed by the transaction they should only care who to update.
+   JKOZ :002: Deadlock uncovered. The MREWS synchroniser in FPC is not re entrant. That means that a call to BeginRead inside a call
+              to BeginWrite from the same thread will dead lock the server.
 }
 
 {$DEFINE DEBUGDETAIL}
@@ -2422,23 +2424,21 @@ begin
       nextNode:=nextNode^.next;
     end;
 
-    if nextNode<>nil then
-    begin //found match, delete it
+    if nextNode<>nil then begin //found match, delete it
       {$IFDEF DEBUG_LOG}
       log.add(who,where+routine,format('Removing stmt %d (%d) from stmtlist %p',[longint(nextNode^.sp),ord(nextNode^.sp.stmtType),stmtList]),vDebugLow); 
       {$ENDIF}
 
       {Close any non-return cursors, and retain any return cursors by repointing their owners so that the next close will delete them}
       //todo: maybe better to do in call routine sections... because we also might need to return the result cursor/stmt?
+      {$IFNDEF FPC}  //JKOZ:002
       stmtlistCS.BeginRead;
       try
+      {$ENDIF}
         nextNode2:=stmtList;
-        while nextNode2<>nil do
-        begin
-          if (nextNode2^.sp.stmtType=stUserCursor)
-          and (nextNode2^.sp.outer=nextNode^.sp)
-          then
-          begin //found a match
+        while nextNode2<>nil do begin
+          if (nextNode2^.sp.stmtType=stUserCursor) and (nextNode2^.sp.outer=nextNode^.sp)
+          then begin //found a match
             {$IFDEF DEBUG_LOG}
             log.add(who,where+routine,format('dependent cursor (%d) stmt found %d in stmtlist %p for %d',[ord(nextNode2^.sp.planReturn),longint(nextNode2^.sp),stmtList,longint(nextNode^.sp)]),vDebugLow); 
             {$ENDIF}
@@ -2452,9 +2452,11 @@ begin
           nextNode2:=nextNode2^.next;
         end;
         //todo catch any exceptions, since there could be some (should never be!)
+      {$IFNDEF FPC}  //JKOZ:002
       finally
         stmtlistCS.EndRead;
       end; {try}
+      {$ENDIF}
 
 
       if nextNode^.sp.sroot<>nil then
@@ -2476,10 +2478,11 @@ begin
           {$ENDIF}
         //todo etc? parseroot?
       end;
-      if nextNode^.sp.sarg<>nil then
+
         {$IFDEF DEBUG_LOG}
-        log.add(who,where+routine,'stmt seems still to have allocated SARG memory, ignoring=memory leak...',vAssertion); 
-        {$ELSE}
+      if nextNode^.sp.sarg<>nil then
+        log.add(who,where+routine,'stmt seems still to have allocated SARG memory, ignoring=memory leak...',vAssertion);
+        {.$ELSE}
         ;
         {$ENDIF}
 
@@ -2509,11 +2512,9 @@ begin
 
       {and its pointer node}
       dispose(nextNode);
-    end
-    else
-    begin
+    end else begin
       //handle was not found, error!
-      result:=fail;
+      Result := Fail;
     end;
   finally
     stmtlistCS.EndWrite;
