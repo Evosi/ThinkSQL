@@ -3,7 +3,7 @@ program EvsSyncObjs;
 {$mode objfpc}{$H+}
 
 uses
-  Interfaces, Forms, GUITestRunner, TestSeamphores, TestEvsSyncObjs;
+  Interfaces, Forms, GUITestRunner, TestSeamphores, TestEvsMutex;
 
 {$R *.res}
 
