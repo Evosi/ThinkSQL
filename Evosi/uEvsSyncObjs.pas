@@ -617,23 +617,11 @@ end;
 procedure TEvsMultiReadSingleWriteCynchronizer.AcquireRead;
 begin
   TryAcquireRead(INFINITE);
-  //FTurnStyle.Acquire;
-  //FTurnStyle.Release;
-  //FDataAccess.Acquire;
-  //try
-  //  //Inc(FReaders);
-  //  //if FReaders = 1 then FWriteAccess.Acquire;
-  //  if InterLockedIncrement(FReaders) = then FWriteAccess.Acquire;
-  //finally
-  //  FDataAccess.Release;
-  //end;
 end;
 
 procedure TEvsMultiReadSingleWriteCynchronizer.AcquireWrite;
 begin
   TryAcquireWrite(INFINITE);
-  //FTurnStyle.Acquire;
-  //FWriteAccess.Acquire;
 end;
 
 function  TEvsMultiReadSingleWriteCynchronizer.TryAcquireRead(const aTimeOut :Integer) :Boolean;
@@ -641,17 +629,25 @@ function  TEvsMultiReadSingleWriteCynchronizer.TryAcquireRead(const aTimeOut :In
 var
   vTimer :TEvsStopWatch;
   vTime  :Int64;
+  procedure StartTimer(var aTimer:TEvsStopWatch; const aaTimeOut:Integer);inline;
+  begin
+    aTimer.Reset;
+    aTimer.MaxInterval := aaTimeOut;
+    aTimer.Start;
+  end;
+  function Remaining(const aTimer:TEvsStopWatch):Int64;inline;
+  begin
+    if aTimer.MaxInterval = INFINITE then Result := INFINITE else Result := aTimer.Remaining;
+  end;
+
 begin
-  vTimer.Reset;
-  vTimer.MaxInterval := aTimeOut;
-  vTimer.Start;
+  StartTimer(vTimer,aTimeOut);
   Result := FTurnStyle.TryAcquire(aTimeOut);
   if Result then begin
     FTurnStyle.Release;
     FDataAccess.Acquire;  //this has to be
     try
-      if aTimeOut = infinite then vTime := aTimeOut else vTime := vTimer.Remaining;
-
+      vTime := Remaining(vTimer);
       if vTime <= 0 then begin //if no wait time available then fail and exit.
         Result := False;
         Exit;
