@@ -13,3 +13,6 @@ backup
 /SQLtools/TestSuite/*.exe
 *.dproj
 bin
+lib
+*.exe
+/TestCases/SyncObjs/SyncObjs.7z

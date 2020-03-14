@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup />
   <ItemGroup>
+    <Projects Include="..\Evosi\EvsSyncObjs.dproj" />
     <Projects Include="dbExpress\sqlthink.dproj" />
     <Projects Include="dcpcrypt2\DCPdelphi2007.dproj" />
     <Projects Include="SQLserver\ThinkSQL.dproj" />
@@ -71,14 +72,23 @@
   <Target Name="ThinkSQLTests:Make">
     <MSBuild Projects="ThinkTestSuite\ThinkSQLTests.dproj" Targets="Make" />
   </Target>
+  <Target Name="EvsSyncObjs">
+    <MSBuild Projects="..\Evosi\EvsSyncObjs.dproj" Targets="" />
+  </Target>
+  <Target Name="EvsSyncObjs:Clean">
+    <MSBuild Projects="..\Evosi\EvsSyncObjs.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="EvsSyncObjs:Make">
+    <MSBuild Projects="..\Evosi\EvsSyncObjs.dproj" Targets="Make" />
+  </Target>
   <Target Name="Build">
-    <CallTarget Targets="ThinkSQL;ThinkSQLService;DCPdelphi2007;sqlthink;TestSuite;ThinkSQLTests" />
+    <CallTarget Targets="ThinkSQL;ThinkSQLService;DCPdelphi2007;sqlthink;TestSuite;ThinkSQLTests;EvsSyncObjs" />
   </Target>
   <Target Name="Clean">
-    <CallTarget Targets="ThinkSQL:Clean;ThinkSQLService:Clean;DCPdelphi2007:Clean;sqlthink:Clean;TestSuite:Clean;ThinkSQLTests:Clean" />
+    <CallTarget Targets="ThinkSQL:Clean;ThinkSQLService:Clean;DCPdelphi2007:Clean;sqlthink:Clean;TestSuite:Clean;ThinkSQLTests:Clean;EvsSyncObjs:Clean" />
   </Target>
   <Target Name="Make">
-    <CallTarget Targets="ThinkSQL:Make;ThinkSQLService:Make;DCPdelphi2007:Make;sqlthink:Make;TestSuite:Make;ThinkSQLTests:Make" />
+    <CallTarget Targets="ThinkSQL:Make;ThinkSQLService:Make;DCPdelphi2007:Make;sqlthink:Make;TestSuite:Make;ThinkSQLTests:Make;EvsSyncObjs:Make" />
   </Target>
   <Import Condition="Exists('$(MSBuildBinPath)\Borland.Group.Targets')" Project="$(MSBuildBinPath)\Borland.Group.Targets" />
 </Project>

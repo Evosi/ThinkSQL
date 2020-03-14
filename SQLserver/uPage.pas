@@ -43,10 +43,16 @@
 }
 
 interface
-
+{$I Defs.inc}
 uses uGlobal, uStmt, sysutils,
      IdTCPConnection{debug only}
-     ,uEvsHelpers;
+     ,uEvsHelpers
+     {$IFDEF FPC}
+     {$IFDEF ReEntryCheck}
+     ,uevsProxies
+     {$ENDIF}
+     {$ENDIF}
+     ;
 
 const
   //InvalidPageId:pageId=$FFFFFFFF; //i.e. maxCardinal(32-bit) //old:-1; (*$7FFFFFFE; {while still crippled in catalog}*)
@@ -82,15 +88,16 @@ type
    (unless the openfile routine ignores the page read error, but still need same size
     page header details to be able to read the data)
   }
-  TPageBlock=record      //page block (keep size in sync. with BlockSize)
-    tearStart:byte{padded to 4 bytes};      //parity check for torn page        //note: wasted space is room for enhanced checksum in future
-    prevPage:PageId;
-    thisPage:PageId;
-    pageType:byte{padded to 4 bytes};       //note: wasted space is room for future expansion     
-    ownerRef:cardinal;                      //future use as owner-object-id e.g. which table this belongs to (useful for buffer-policy-debugging & fixing etc)
-    nextPage:PageId;
-    data:TBlock;
-    tearEnd:byte{padded to 4 bytes};        //parity check for torn page
+
+  TPageBlock=record                       //page block (keep size in sync. with BlockSize)
+    tearStart :Byte{padded to 4 bytes};   //parity check for torn page        //note: wasted space is room for enhanced checksum in future
+    prevPage  :PageId;
+    thisPage  :PageId;
+    pageType  :Byte{padded to 4 bytes};   //note: wasted space is room for future expansion
+    ownerRef  :Cardinal;                  //future use as owner-object-id e.g. which table this belongs to (useful for buffer-policy-debugging & fixing etc)
+    nextPage  :PageId;
+    data      :TBlock;
+    tearEnd   :byte{padded to 4 bytes};   //parity check for torn page
   end; {TPageBlock}
 
   TPage=class            //page in memory
@@ -99,10 +106,10 @@ type
       PageCS:TmultiReadExclusiveWriteSynchronizer;     //page access mutex - used to protect access to latchTranId
       latchStampId:StampId;       //tran-id of latch holder
     public
-      block:TPageBlock;         //disk block data  (just need getAddrPtr(offset) for file.read)
-                                //todo Should take account of latch when setting block attributes! - only in uDatabase?
+      block:TPageBlock;           //disk block data  (just need getAddrPtr(offset) for file.read)
+                                  //todo Should take account of latch when setting block attributes! - only in uDatabase?
 
-      dirty:boolean;            //page dirty flag - set by read/write page routines
+      dirty:boolean;              //page dirty flag - set by read/write page routines
       constructor Create;
       destructor Destroy; override;
 

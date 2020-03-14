@@ -1240,7 +1240,7 @@ begin
       if page.latch(st)=ok then
       begin
         try
-          page.AsBlock(st,0,sizeof(sHeader),@sHeader);
+          page.AsBlock(st,0,sizeof(sHeader),@sHeader);    //JKOZ :RE - Entry
 
           {Read slot entry}
           page.AsBlock(st,rid.sid*sizeof(slot),sizeof(slot),@slot);

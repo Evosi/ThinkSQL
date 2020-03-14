@@ -2,8 +2,7 @@ program ThinkSQL;
 
 {       ThinkSQL Relational Database Management System
               Copyright © 2000-2012  Greg Gaughan
-                  See LICENCE.txt for details
-}
+                  See LICENCE.txt for details }
 {$I Defs.inc}
 {.$I Optional.use} // this include must be at the top of the uses clause bellow. Adding and removing files from the project deletes it.
 uses

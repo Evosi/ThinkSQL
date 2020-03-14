@@ -8,7 +8,7 @@
 
 unit uEvsSyncObjs;
 
-{$IFDEF FPC} {$MODE DELPHI} {$MODESWITCH advancedrecords}{$H+}
+{$IFDEF FPC} {$MODE DELPHIUNICODE} {$MODESWITCH advancedrecords}{$H+}
 {$ELSE}
   {$IFDEF WIN32} {$DEFINE WINDOWS}{$ENDIF}
 {$ENDIF}
@@ -19,7 +19,7 @@ unit uEvsSyncObjs;
 
 interface
 uses
-  {.$IFDEF FPC}syncobjs, {.$ENDIF}
+  SyncObjs,
   {$IFDEF WINDOWS} windows, {$ENDIF}
    sysutils;
 
@@ -27,12 +27,14 @@ const
 //Windows infinite
    INFINITE = DWORD($FFFFFFFF);     { Infinite timeout }
 
-   { TODO -oeljo : Add a lightweight event wrapper. }
+   { TODO -ojkoz : Add a lightweight event wrapper. }
 
 type
+
   {$IFNDEF FPC}
   Int32 = Longint;
   UInt32 = LongWord;
+  TThreadID = THandle;
   {$ENDIF}
   TTimeUnit=(tuTicks, tuMiliseconds);
 
@@ -68,17 +70,34 @@ type
     procedure Wait;                                                {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};
     function WaitFor(Const aTimeOut:DWORD = INFINITE):LongBool;    {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};
   end;
-
+{
+ {-------------------------------------------------------------------------------
+  Class: TSyncObj (abstract class the bases for all primitives.
+  Author:    Jkoz
+  DateTime:  01/06/2018 (dd/mm/yyyy)
+ Abstract class to set the basic schemantics for all the synchronization objects.
+-------------------------------------------------------------------------------}
   TSyncObj = class(TObject)
   public
+    // acquire access to the protected resource wait until access is aquired.
     procedure Acquire;virtual;                                              {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};abstract;
+    // try to get access for the next <aTimeOut> ms and return true if access is acquired, false otherwise.
     function  TryAcquire(const aTimeOut :DWORD = INFINITE):LongBool;virtual;{$IFDEF Windows}stdcall {$else} cdecl{$EndIf};abstract;
+    // done with the protected resource releasing my access to others.
     procedure Release;virtual;                                              {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};abstract;
+    //wait and waitFor are equivalent to acquire and TryAcquire respectively.
+    //A second schemantic is a bit of over engineer but people seem to like their choices
     procedure Wait;virtual;                                                 {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};
     function  WaitFor(Const aTimeOut:DWORD = INFINITE):LongBool;virtual;    {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};abstract;
   end;
 
-  {a simple wrapper around the system semaphore functionality.}
+{
+ {-------------------------------------------------------------------------------
+  Class: TSyncObj (abstract class the bases for all primitives.
+  Author:    Jkoz
+  DateTime:  01/06/2018 (dd/mm/yyyy)
+  A simple wrapper around the system's semaphores.
+-------------------------------------------------------------------------------}
   TSemaphore = class (TSyncObj)
   private
     {Returns the value of the semaphore }
@@ -168,19 +187,41 @@ type
 
   { TThreadLocalCounters }
   //for internal use only, unsafe to use outside the library.
+  {
+    This is a class that keeps a counter for each thread that uses it.
+    A list of threads and their counter is kept every time the increase method is
+    called from inside a thread a counter for this thread is increased by one
+    and Decrease will substract one for the same counter.
+    If the threads counter does not exists it is created and never destroyed unless
+    the coutners class is destroyed it self.
+
+    TODO Add a cleanup method where all the counters that have their counter = 0
+    will be released and their spot could be reused by other threads.
+  }
   TThreadLocalCounters = class
   private
     FDataAccess :TMutex;
     FLocalStack :Pointer;
     //FEmptyNode  :Pointer;
     FTotal      :Integer;
+    //NilNode is a dangerus idea I had. Instead of using  the 0 address
+    // as an invalid address I use a specific address that has the leaf proeprties
+    // loop back to it self. that makes accessing the leaf nodes safe at all times
+    // and saves me an if check trying to avoid using the extra check for nill before
+    // accessing the leafs when a linked list is walked through.
+    // In any case since this is a custom memory address instead of 0 it makes it
+    // easier for malicious code to use it to execute something else and makes it
+    // inheretly unsafe.
     FNilNode    :Pointer;
     FEvent      :TEvent;
     function GetSingleThread :Boolean;  // property gettter is called from the outside.
     function GetThTotal :Integer;
+//    function LF_GetTotal   :Integer;  
     function GetTotal   :Integer;
-    function InitNode   :Pointer;
+    function NewNode   :Pointer;
   protected
+    function  IsNillNode(aNode:Pointer):Boolean;inline;
+    // Append a new Node to the list
     procedure AppendNode(aNode:Pointer);
     procedure RemoveNode(aNode:Pointer);
     procedure FreeStack;
@@ -216,7 +257,7 @@ type
     procedure Release; override;                                              {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};
     function  TryAcquire(const aTimeOut :DWORD=INFINITE) :LongBool; override; {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};
     //wait for the switch to be turned of.
-    function  WaitFor(const aTimeOut:DWORD=INFINITE):LongBool;override;        {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};
+    function  WaitFor(const aTimeOut:DWORD=INFINITE):LongBool;override;       {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};
     procedure Lock;
     procedure Unlock;
     constructor Create(const aLock:TSyncObj);
@@ -242,7 +283,6 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-
     // adds one more item in the list
     procedure Acquire; override;                                             {$IFDEF Windows}stdcall {$else} cdecl{$EndIf};
     // removes an item from the list
@@ -325,15 +365,15 @@ Type
   TCSProcedure    = procedure (var cs : TRTLCriticalSection);{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
   TTryCSFunction  = function  (var cs : TRTLCriticalSection):LongInt;{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
 
-  TSemFunction = function  (aSemaphore:TSemaphoreHandle; aVal:Longint):LongBool;{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
-  TSemCreate   = function  (Start, Max:integer):TSemaphoreHandle;{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
-  TSemProc     = procedure (aSem:TSemaphoreHandle);{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
-  TSemTryProc  = Procedure (aSem:TSemaphoreHandle; aTimeout:Longint; var aResult:LongBool);{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+  TSemFunction = function (aSemaphore:TSemaphoreHandle; aVal:Longint):LongBool;{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+  TSemCreate   = function (Start, Max:integer):TSemaphoreHandle;{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+  TSemProc     = procedure(aSem:TSemaphoreHandle);{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+  TSemTryProc  = Procedure(aSem:TSemaphoreHandle; aTimeout:Longint; var aResult:LongBool);{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
 
-  TEventCreate    = function  (lpEventAttributes: PSecurityAttributes; bManualReset, bInitialState: LongBool; lpName: PAnsiChar): TEventHandle;{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
-  TEventFunction  = function  (aEvent: TEventHandle): LongBOOL; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
-  TEventWait      =  function (aEvent: TEventHandle;const aTimeOut:Longint): LongBOOL; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
-  TEventProcedure = Procedure (var aEvent:TEventHandle);
+  TEventCreate    = function (lpEventAttributes: PSecurityAttributes; bManualReset, bInitialState: LongBool; lpName: PAnsiChar): TEventHandle;{$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+  TEventFunction  = function (aEvent: TEventHandle): LongBOOL; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+  TEventWait      = function (aEvent: TEventHandle;const aTimeOut:Longint): LongBOOL; {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
+  TEventProcedure = Procedure(var aEvent:TEventHandle);
 
   PCountStackNode = ^TCountStackNode;
   TCountStackNode = Packed Record
@@ -523,9 +563,10 @@ end;
 
 destructor TThreadLightSwitch.Destroy;
 begin
-  FDataAccess.Free;
+  FDataAccess.Acquire;
   FSwitch.Free;
   FCounter.Free;
+  FDataAccess.Free;
   inherited Destroy;
 end;
 
@@ -594,17 +635,30 @@ begin
   end;
 end;
 
+//function TThreadLocalCounters.LF_GetTotal :Integer;
+//begin
+//  Result := InterLockedExchange(FTotal, FTotal);
+//end;
+
 function TThreadLocalCounters.GetTotal :Integer;
 begin
-  InterLockedExchange(Result, FTotal);
+  FDataAccess.Acquire;
+  try
+    Result := FTotal;
+  finally
+    FDataAccess.Release;
+  end;
 end;
 
-function TThreadLocalCounters.InitNode :Pointer;
+function TThreadLocalCounters.NewNode :Pointer;
 begin
-  //GetMem(Result, SizeOf(TCountStackNode));
-  //FillMemory(Result,SizeOf(TCountStackNode),0);
   Result := AllocMem(SizeOf(TCountStackNode)); //allocmem allocates and clear memory
   PCountStackNode(Result)^.Next := PCountStackNode(Result); //create a null node
+end;
+
+function TThreadLocalCounters.isNillNode(aNode: Pointer): Boolean; inline;
+begin
+  Result := aNode = FNilNode;
 end;
 
 procedure TThreadLocalCounters.AppendNode(aNode :Pointer);
@@ -646,18 +700,39 @@ begin
     FDataAccess.Release;
   end;
 end;
+{
+ Lock free implementation of the method method.
+}
+//function TThreadLocalCounters.LF_GetCounter(const aThreadID :LongInt) :Pointer;
+//begin
+//  InterLockedExchange(Integer(Result), Integer(FLocalStack));
+//  if Result <> FNilNode then
+//    repeat
+//      if PCountStackNode(Result)^.ThreadID <> aThreadID then //begin
+//        //if (PCountStackNode(Result)^.ThreadID = 0) and (FEmptyNode = nil) then FEmptyNode := Result; //keep the first empty node you find
+//        Result := PCountStackNode(Result)^.Next;
+//      //end;
+//    until (PCountStackNode(Result)^.ThreadID = aThreadID) or (Result = FNilNode);
+//  if (Result = FNilNode) then Result := nil;
+//end;
 
 function TThreadLocalCounters.GetCounter(const aThreadID :LongInt) :Pointer;
 begin
-  InterLockedExchange(Integer(Result), Integer(FLocalStack));
-  if Result <> FNilNode then
-    repeat
-      if PCountStackNode(Result)^.ThreadID <> aThreadID then //begin
-        //if (PCountStackNode(Result)^.ThreadID = 0) and (FEmptyNode = nil) then FEmptyNode := Result; //keep the first empty node you find
-        Result := PCountStackNode(Result)^.Next;
-      //end;
-    until (PCountStackNode(Result)^.ThreadID = aThreadID) or (Result = FNilNode);
-  if (Result = FNilNode) then Result := nil;
+  FDataAccess.Acquire;
+  try
+    Result := FLocalStack;
+    //InterLockedExchange(Integer(Result), Integer(FLocalStack));
+    if Result <> FNilNode then
+      repeat
+        if PCountStackNode(Result)^.ThreadID <> aThreadID then begin
+          //if (PCountStackNode(Result)^.ThreadID = 0) and (FEmptyNode = nil) then FEmptyNode := Result; //keep the first empty node you find to make it faster to add a new thread counter
+          Result := PCountStackNode(Result)^.Next;
+        end;
+      until (PCountStackNode(Result)^.ThreadID = aThreadID) or (Result = FNilNode);
+    if (Result = FNilNode) then Result := nil;
+  finally
+    FDataAccess.Release;
+  end;
 end;
 
 function TThreadLocalCounters.GetThreadCounter(AutoAppend:Boolean=True):Pointer;
@@ -672,7 +747,7 @@ begin
     vHead := GetCounter(vID);
     if (vHead = nil) and AutoAppend then begin
 //      if FEmptyNode = nil then begin
-        vHead := InitNode;
+        vHead := NewNode;
         vHead^.Next := FNilNode;
         AppendNode(vHead);
   //    end else
@@ -689,15 +764,15 @@ procedure TThreadLocalCounters.FreeStack;
 var
   vNode :PCountStackNode;
 begin
-  //FDataAccess.Acquire;
-  //try
+  FDataAccess.Acquire;
+  try
     repeat
       vNode := Pointer(InterLockedExchange(Integer(FLocalStack), Integer(PCountStackNode(FLocalStack)^.Next)));
       if (vNode <> FNilNode) then Freemem(vNode, SizeOf(TCountStackNode));
     until vNode = FNilNode;
-  //finally
-  //  FDataAccess.Release;
-  //end;
+  finally
+    FDataAccess.Release;
+  end;
 end;
 
 constructor TThreadLocalCounters.Create;
@@ -710,7 +785,7 @@ begin
   //this is going to be used in a my re entrant MREWS. the one I have
   //now it does not work.
   inherited Create;
-  FNilNode := InitNode;
+  FNilNode := NewNode;
   FLocalStack := FNilNode;
   FDataAccess := TMutex.Create;
 end;
@@ -755,13 +830,20 @@ function TThreadLocalCounters.Decrease :Integer;
 var
   vThreadCounter : PCountStackNode;
 begin
-  Result := -1;
+  Result := -1; // if a thread with out a counter makes an attempt to decrease the counters it will get a -1 as responce instead of the total. This helps in debugging 
   vThreadCounter := GetThreadCounter(False);
-  if Assigned(vThreadCounter) then begin
+  if Assigned(vThreadCounter) then begin // if the thread has a counter then and only then subtruct one from the counters.
     //this can only be accessed by the thread it self.
-    if InterlockedDecrement(vThreadCounter^.Value) = 0 then vThreadCounter^.ThreadID := 0; //re use the node.
-  end;
-  Result := InterlockedDecrement(FTotal);
+    if InterlockedDecrement(vThreadCounter^.Value) = 0 then RemoveNode(vThreadCounter);// vThreadCounter^.ThreadID := 0; //re use the node.
+    Result := InterlockedDecrement(FTotal);
+  end {else begin // in the case that a thread with out a counter has requested a subtraction just return the existing total.
+    FDataAccess.Acquire;
+    try
+      Result := FTotal; //InterlockedExchange(FTotal, FTotal);
+    finally
+      FDataAccess.Release;
+    end;
+  end};
 end;
 
 {$REGION ' TEvsStopWatch '}

@@ -2,6 +2,8 @@ unit uEvsThsOptions;
 
 {$IFDEF FPC}
 {$mode delphi}
+{$ELSE}
+{$IFDEF win32}{$DEFINE WINDOWS}{$ENDIF}
 {$ENDIF}
 
 interface
@@ -84,7 +86,16 @@ type
 function Options:IEvsThsRuntimeOptions;
 
 implementation
-uses syncobjs, IniFiles, {uEvsEncoding} IdCoderUUE; //do not polute the code with more external requirements.
+uses
+  syncobjs,
+  IniFiles, {uEvsEncoding}
+  {$IFNDEF FPC}
+  ShlObj,
+  {$ENDIF}
+  IdCoderUUE; //do not polute the code with more external requirements.
+const
+  MAX_PATH = 260;
+
 type
 
   { TEvsIniPersister }
@@ -99,7 +110,7 @@ type
   public
     procedure Lock;
     procedure Unlock;
-    constructor Create(const aOwner :IUnknown =nil); override;overload;
+    constructor Create(const aOwner :IUnknown =nil); overload;override;
     constructor Create(const aFilename:String;const aOwner :IUnknown =nil); overload;
     procedure Setfilename(const aFilename:string);
     procedure Write        (const aKey:WideString; const aBuffer; const aSize:integer); {$IFDEF WINDOWS}stdcall{$ELSE}cdecl{$ENDIF};
@@ -169,6 +180,27 @@ type
     property ServiceName   :widestring read GetServiceName   write SetServiceName;   // Returns ThinkSQL
     property ServerName    :widestring read GetServerName    write SetServerName;   // Returns ThinkSQL
   end;
+
+{$IFNDEF FPC}
+function GetWindowsSpecialDirUnicode(ID: Integer): String;
+var
+  Buffer: array [0..MAX_PATH] of WideChar;
+begin
+  Result := '';
+  if SHGetSpecialFolderPath(0, @Buffer[0], ID, False) then
+    Result := IncludeTrailingPathDelimiter(StrPas(@Buffer[0]));
+end;
+
+function GetWindowsSpecialDir(ID: Integer): String;
+begin
+  Result := String(GetWindowsSpecialDirUnicode(ID));
+end;
+
+Function GetUserDir : String;
+begin
+  Result := GetWindowsSpecialDir(CSIDL_PROFILE);
+end;
+{$ENDIF}
 
 {$REGION ' TEvsIniPersister '}
 
@@ -266,7 +298,11 @@ procedure TEvsIniPersister.WriteInt64(const aKey :WideString;const aValue :Int64
 begin
   Lock;
   try
+  {$IFDEF FPC}
     FFile.WriteInt64(FSection, aKey, aValue);
+  {$ELSE}
+    FFile.WriteString(FSection,aKey, IntToStr(aValue));
+  {$ENDIF}
   finally
     Unlock;
   end;
@@ -350,7 +386,11 @@ function TEvsIniPersister.ReadInt64(const aKey :WideString;const aDefaultValue:I
 begin
   Lock;
   try
+  {$IFDEF FPC}
     Result := FFile.ReadInt64(FSection, aKey, aDefaultValue);
+  {$ELSE}
+    Result := StrToInt64(FFile.ReadString(FSection, aKey, IntToStr(aDefaultValue)));
+  {$ENDIF}    
   finally
     Unlock;
   end;
@@ -618,6 +658,16 @@ This function does two things
 It makes sure that the filename returned has a complete path to avoid using the OS's current
 directory and remove any ambiquity from the process.
 }
+{$IFNDEF FPC}
+Function GetAppConfigDir(Global : Boolean) : String;
+begin
+  If Global then
+    Result:=GetWindowsSpecialDir(CSIDL_COMMON_APPDATA)
+  else
+    Result:=GetWindowsSpecialDir(CSIDL_LOCAL_APPDATA);
+  Result := Result + 'EVOSI\';
+end;
+
 function GetConfigFilename:string;
 begin
   Result := ChangeFileExt(ParamStr(0),'.cfg');
@@ -627,6 +677,7 @@ begin
   end;
 end;
 
+{$ENDIF}
 function Options:IEvsThsRuntimeOptions;
   procedure LoadDefaults;
   var
@@ -648,14 +699,18 @@ begin
   Result := vOptions;
 end;
 
+{$IFDEF FPC}
 function DoVendorName:String;
 begin
   Result := 'Evosi';
 end;
+{$ENDIF}
 
 initialization
   vOptions := Nil; //no random data please
+{$IFDEF FPC}
   OnGetVendorName := DoVendorName;
+{$ENDIF}
 
 finalization
   vOptions := Nil; //clean up.
