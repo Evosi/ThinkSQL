@@ -1,5 +1,4 @@
-
-unit TestMREWSynch;
+unit UTestDelphiMREWS;
 { This unit contains the test cases for the multi read exclusive write synhronizer,
   as alwasy this is work in progress, any problems you can demostrate or features you wish to see
   are welcome, above all else I welcome test cases that will help me debug your problems. }
@@ -12,16 +11,16 @@ uses
   {$IFDEF MSWINDOWS}
   windows,
   {$ENDIF}
-  uSyncObjs, uThreadTestUtils, SyncObjs;
+  UMREWSDLL, SyncObjects, uThreadTestUtils;
 
 type
-  // Test methods for class TSemaSynchronizer
-  
+  // Test methods for class TEvsSemaSynchronizer
+
   { TTestEvsMREWSynchronizer }
 
   TTestEvsMREWSynchronizer = class(TTestCase)
   strict private
-    FSynchronizer: TMREWS;
+    FSynchronizer: TDelphiMREWS;
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -36,7 +35,7 @@ implementation
 
 procedure TTestEvsMREWSynchronizer.SetUp;
 begin
-  FSynchronizer := TMREWS.Create;
+  FSynchronizer := TDelphiMREWS.Create;
 end;
 
 procedure TTestEvsMREWSynchronizer.TearDown;
@@ -125,9 +124,9 @@ end;
 
 procedure TTestEvsMREWSynchronizer.TestSingleThreadWriteLock;
 var
-  vtmp : sysutils.TMREWS;
+  vTst:syncobj.tmultiread
 begin
-   sysutils.TMultiReadExclusiveWriteSynchronizer.create;
+
 end;
 
 initialization

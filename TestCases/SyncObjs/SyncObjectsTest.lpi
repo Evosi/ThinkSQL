@@ -6,7 +6,7 @@
     <General>
       <SessionStorage Value="InProjectDir"/>
       <MainUnit Value="0"/>
-      <Title Value="EvsSyncObjs"/>
+      <Title Value="SyncObjectsTest"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
       <Icon Value="0"/>
@@ -35,11 +35,11 @@
     </RequiredPackages>
     <Units Count="10">
       <Unit0>
-        <Filename Value="EvsSyncObjs.lpr"/>
+        <Filename Value="SyncObjectsTest.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
-        <Filename Value="..\..\Evosi\uEvsSyncObjs.pas"/>
+        <Filename Value="..\..\Eljo\uSyncObjs.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit1>
       <Unit2>
@@ -55,7 +55,7 @@
         <IsPartOfProject Value="True"/>
       </Unit4>
       <Unit5>
-        <Filename Value="..\Helpers\uEvsThreadTestUtils.pas"/>
+        <Filename Value="..\Helpers\uThreadTestUtils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit5>
       <Unit6>
@@ -80,11 +80,11 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="EvsSyncObjs"/>
+      <Filename Value="SyncObjectsTest"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);..\.."/>
-      <OtherUnitFiles Value="..\..\Evosi;..\Helpers"/>
+      <OtherUnitFiles Value="..\..\Evosi;..\Helpers;..\..\Eljo"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>

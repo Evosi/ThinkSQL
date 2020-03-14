@@ -1,4 +1,4 @@
-program EvsSyncObjs;
+program SyncObjectsTest;
 
 {$mode objfpc}{$H+}
 

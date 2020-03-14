@@ -8,13 +8,13 @@ unit TestSeamphores;
 interface
 
 uses
-  Classes, SysUtils, TestFramework, uEvsSyncObjs;
+  Classes, SysUtils, TestFramework, uSyncObjs;
 
 type
 
   TTestEvsSemaphore = class(TTestCase)
   strict private
-    FEvsSemaphore: TEvsSemaphore;
+    FEvsSemaphore: TSemaphore;
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -68,7 +68,7 @@ end;
 
 procedure TTestEvsSemaphore.SetUp;
 begin
-  FEvsSemaphore := TEvsSemaphore.Create(5,5);
+  FEvsSemaphore := TSemaphore.Create(5,5);
 end;
 
 procedure TTestEvsSemaphore.TearDown;

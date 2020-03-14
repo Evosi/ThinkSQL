@@ -1,14 +1,10 @@
 unit TestCriticalSection;
-{
-
-  Evosi MultiThread primitives Test Case
+{ Evosi MultiThread primitives Test Case
   ----------------------
   This unit contains The test case for delphi's TCriticalSection this is a very basic
   test case that makes sure that
     1) once a thread has entered in the critical section no other thread can,
-    2) the same thread can re enter with out problems.
-
-}
+    2) the same thread can re enter with out problems. }
 
 interface
 
@@ -72,11 +68,7 @@ begin
   CheckTrue(CG_IsLocked(FCriticalSection),'Seems that you dig not lock it properly mate.');
   FCriticalSection.Release;
   CheckFalse(CG_IsLocked(FCriticalSection),'Seems that you dig not lock it properly mate.');
-  //FCriticalSection.Release;
-  //FCriticalSection.Release;
-  //FCriticalSection.Release;
-  //FCriticalSection.Release;
-end;
+ end;
 
 procedure TestTCriticalSection.TestRelease;
 begin

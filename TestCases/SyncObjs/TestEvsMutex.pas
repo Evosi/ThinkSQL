@@ -12,14 +12,14 @@ unit TestEvsMutex;
 interface
 
 uses
-  TestFramework, sysutils, windows, uEvsSyncObjs;
+  TestFramework, sysutils, windows, uSyncObjs;
 
 type
-  // Test methods for class TEvsMutex
+  // Test methods for class TMutex
   
   TestTEvsMutex = class(TTestCase)
   strict private
-    FMutex: TEvsMutex;
+    FMutex: TMutex;
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -33,7 +33,7 @@ type
   end;
 
 implementation
-uses uevsThreadTestUtils;
+uses uThreadTestUtils;
 
 {$IFDEF WINDOWS}
 type
@@ -69,7 +69,7 @@ end;
 
 procedure TestTEvsMutex.SetUp;
 begin
-  FMutex := TEvsMutex.Create;
+  FMutex := TMutex.Create;
 end;
 
 procedure TestTEvsMutex.TearDown;
